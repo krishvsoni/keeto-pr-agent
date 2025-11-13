@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI PR Review Agent - LangChain Powered</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #444;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .progress-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .progress-header h3 {
+            color: #1e293b;
+            font-size: 1.3rem;
+        }
+
+        .progress-badge {
+            background: #667eea;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .progress-timeline {
+            position: relative;
+            padding-left: 40px;
+        }
+
+        .progress-item {
+            position: relative;
+            margin-bottom: 25px;
+            opacity: 0;
+            animation: fadeInUp 0.5s forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .progress-item::before {
+            content: '';
+            position: absolute;
+            left: -40px;
+            top: 5px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            border: 3px solid white;
+            box-shadow: 0 0 0 2px #e2e8f0;
+        }
+
+        .progress-item.active::before {
+            background: #667eea;
+            box-shadow: 0 0 0 2px #667eea, 0 0 10px rgba(102, 126, 234, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .progress-item.completed::before {
+            background: #10b981;
+            box-shadow: 0 0 0 2px #10b981;
+        }
+
+        .progress-item.error::before {
+            background: #ef4444;
+            box-shadow: 0 0 0 2px #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .progress-content {
+            background: #f8fafc;
+            padding: 15px 20px;
+            border-radius: 8px;
+        }
+
+        .progress-title {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 6px;
+            font-size: 15px;
+        }
+
+        .progress-message {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .results-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 25px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .results-header h2 {
+            margin-bottom: 10px;
+        }
+
+        .results-body {
+            background: #f8fafc;
+            padding: 25px;
+            border-radius: 0 0 12px 12px;
+            border: 2px solid #e2e8f0;
+            border-top: none;
+        }
+
+        .summary-box {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .summary-box pre {
+            font-family: 'Segoe UI', sans-serif;
+            color: #475569;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+        }
+
+        .reset-btn {
+            background: #64748b;
+            margin-top: 20px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e2e8f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .main-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI PR Review Agent</h1>
+            <p>LangChain-powered multi-agent code review with critical thinking • Just paste your PR URL!</p>
+        </div>
+
+        <div class="main-card">
+            <div class="form-section" id="formSection">
+                <div class="form-group">
+                    <label for="prUrl">🔗 GitHub PR URL</label>
+                    <input type="text" id="prUrl" placeholder="https://github.com/owner/repo/pull/123" required>
+                    <small>Paste the full GitHub PR URL here (e.g., https://github.com/facebook/react/pull/123)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="customInstructions">📝 Custom Review Instructions (Optional)</label>
+                    <textarea id="customInstructions" placeholder="E.g., 'Focus on security vulnerabilities and performance issues. Pay special attention to database queries and API calls.'" rows="4"></textarea>
+                    <small>Guide the AI agents to focus on specific aspects or concerns in your review</small>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="postComments">
+                    <label for="postComments">Post review comments to GitHub (requires permissions)</label>
+                </div>
+
+                <button class="btn" onclick="startReview()" id="reviewBtn">
+                    🚀 Start Deep AI Review
+                </button>
+            </div>
+
+            <div class="progress-section" id="progressSection">
+                <div class="progress-header">
+                    <h3>🔍 Review in Progress</h3>
+                    <div class="progress-badge">
+                        <span class="loading-spinner"></span> Analyzing...
+                    </div>
+                </div>
+                <div class="progress-timeline" id="progressTimeline"></div>
+            </div>
+
+            <div class="results-section" id="resultsSection">
+                <div class="results-header">
+                    <h2>📊 Review Results</h2>
+                </div>
+                <div class="results-body">
+                    <div class="summary-box" id="summaryBox"></div>
+                    <button class="btn reset-btn" onclick="resetForm()">Review Another PR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function startReview() {
+            const prUrl = document.getElementById('prUrl').value.trim();
+            const customInstructions = document.getElementById('customInstructions').value.trim();
+            const postComments = document.getElementById('postComments').checked;
+
+            if (!prUrl) {
+                alert('Please enter a GitHub PR URL');
+                return;
+            }
+
+            // Reset UI
+            document.getElementById('formSection').style.display = 'none';
+            document.getElementById('progressSection').classList.add('active');
+            document.getElementById('resultsSection').classList.remove('active');
+            document.getElementById('progressTimeline').innerHTML = '';
+            document.getElementById('reviewBtn').disabled = true;
+
+            // Start streaming review
+            const eventSource = new EventSource(`/api/stream-review?pr_url=${encodeURIComponent(prUrl)}&custom_instructions=${encodeURIComponent(customInstructions)}&post_comments=${postComments}`);
+            
+            // Actually, we need to use POST for this, so let's use fetch with EventSource simulation
+            fetch('/api/chat-review', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    pr_url: prUrl,
+                    custom_instructions: customInstructions,
+                    post_comments: postComments
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayResults(data);
+            })
+            .catch(error => {
+                addProgressItem('error', 'Error', error.message);
+                document.getElementById('reviewBtn').disabled = false;
+            });
+        }
+
+        function addProgressItem(status, title, message) {
+            const timeline = document.getElementById('progressTimeline');
+            const item = document.createElement('div');
+            item.className = `progress-item ${status}`;
+            item.innerHTML = `
+                <div class="progress-content">
+                    <div class="progress-title">${title}</div>
+                    <div class="progress-message">${message}</div>
+                </div>
+            `;
+            timeline.appendChild(item);
+            timeline.scrollTop = timeline.scrollHeight;
+        }
+
+        function displayResults(data) {
+            document.getElementById('progressSection').classList.remove('active');
+            document.getElementById('resultsSection').classList.add('active');
+            
+            const summaryBox = document.getElementById('summaryBox');
+            
+            if (data.status === 'error') {
+                summaryBox.innerHTML = `
+                    <h3 style="color: #ef4444;">❌ Error</h3>
+                    <p style="color: #475569; margin-top: 10px;">${data.error}</p>
+                `;
+            } else {
+                summaryBox.innerHTML = `<pre>${data.summary || 'No summary available'}</pre>`;
+            }
+            
+            document.getElementById('reviewBtn').disabled = false;
+        }
+
+        function resetForm() {
+            document.getElementById('formSection').style.display = 'block';
+            document.getElementById('progressSection').classList.remove('active');
+            document.getElementById('resultsSection').classList.remove('active');
+            document.getElementById('prUrl').value = '';
+            document.getElementById('customInstructions').value = '';
+            document.getElementById('postComments').checked = false;
+            document.getElementById('reviewBtn').disabled = false;
+        }
+    </script>
+</body>
+</html>
