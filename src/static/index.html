@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PR Review AI</title>
+    <title>Keeto AI</title>
     <link rel="icon" href="https://github.githubassets.com/favicons/favicon-dark.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
@@ -22,13 +22,13 @@
             --info-color: #39739d;
         }
         .code-block {
-            background-color: #2d3748;
+            background-color: #0d1117;
             border-radius: 0.375rem;
             padding: 1rem;
             font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
             font-size: 0.875rem;
             overflow-x: auto;
-            margin: 1rem 0;
+            margin: 0;
         }
         .line-number {
             color: #6b7280;
@@ -56,6 +56,16 @@
             background-color: rgba(46, 160, 67, 0.15);
             border-left: 3px solid #2ea043;
             padding-left: 0.5rem;
+        }
+        .code-header {
+            background-color: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 0.5rem 1rem;
+            border-top-left-radius: 0.375rem;
+            border-top-right-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #e6edf3;
         }
     </style>
 </head>
@@ -228,12 +238,12 @@
                                 ${issue.line ? `<span class="text-[var(--accent-color)]">:${issue.line}</span>` : ''}
                             </div>
                             <div class="mb-3">${issue.description}</div>
-                            
+
                             ${issue.code_context ? `
-                                <div class="mb-4">
-                                    <div class="text-sm font-semibold text-[var(--text-secondary)] mb-2">📄 Current Code:</div>
-                                    <div class="bg-[#0d1117] rounded-md p-4 border border-[var(--border-color)] overflow-x-auto">
-                                        <pre class="text-sm"><code>${renderCodeWithLineNumbers(
+                                <div class="mb-4 rounded-md overflow-hidden border border-[var(--border-color)]">
+                                    <div class="code-header">Current Code</div>
+                                    <div class="code-block">
+                                        <pre><code>${renderCodeWithLineNumbers(
                                             issue.code_context.full_context,
                                             issue.code_context.start_line,
                                             issue.code_context.target_line_number
@@ -241,29 +251,32 @@
                                     </div>
                                 </div>
                             ` : ''}
-                            
+
+                            ${issue.diff_patch ? `
+                                <div class="mb-4 rounded-md overflow-hidden border border-[var(--border-color)]">
+                                    <div class="code-header">PR Changes (Diff)</div>
+                                    <div class="code-block">
+                                        <pre><code>${renderDiff(issue.diff_patch)}</code></pre>
+                                    </div>
+                                </div>
+                            ` : ''}
+
                             ${issue.suggestion || issue.suggested_code ? `
-                                <div class="bg-gray-900 rounded-md border-l-4 border-[var(--success-color)] overflow-hidden">
+                                <div class="bg-gray-900 rounded-md border-l-4 border-[var(--success-color)] overflow-hidden mt-4">
                                     ${issue.suggestion ? `
                                         <div class="p-3 border-b border-[var(--border-color)]">
-                                            <div class="text-[var(--success-color)] font-medium mb-1">💡 Suggested Fix:</div>
+                                            <div class="text-[var(--success-color)] font-medium mb-1">Suggestion</div>
                                             <div class="text-sm">${issue.suggestion}</div>
                                         </div>
                                     ` : ''}
                                     ${issue.suggested_code ? `
-                                        <div class="p-3">
-                                            <div class="text-[var(--success-color)] font-medium mb-2">✅ Corrected Code:</div>
-                                            <div class="bg-[#0d1117] rounded-md p-4 border border-[var(--success-color)]">
-                                                <pre class="text-sm"><code class="diff-added">${escapeHtml(issue.suggested_code)}</code></pre>
+                                        <div class="rounded-md overflow-hidden border border-[var(--success-color)]">
+                                            <div class="code-header" style="border-color: var(--success-color);">Corrected Code</div>
+                                            <div class="code-block">
+                                                <pre><code class="language-javascript">${escapeHtml(issue.suggested_code)}</code></pre>
                                             </div>
                                         </div>
                                     ` : ''}
-                                </div>
-                            ` : ''}
-                            
-                            ${issue.code_snippet ? `
-                                <div class="code-block">
-                                    <pre>${escapeHtml(issue.code_snippet)}</pre>
                                 </div>
                             ` : ''}
                         </div>
@@ -284,6 +297,11 @@
             resultsDiv.innerHTML = html;
             resultsDiv.classList.remove('hidden');
             resultsDiv.scrollIntoView({ behavior: 'smooth' });
+
+            // Apply syntax highlighting
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
         }
 
         function displayError(message) {
@@ -306,22 +324,46 @@
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
-        
+
         function renderCodeWithLineNumbers(code, startLine, targetLine) {
             const lines = code.split('\n');
             let result = '';
-            
+
             lines.forEach((line, index) => {
                 const lineNumber = startLine + index;
                 const isTargetLine = lineNumber === targetLine;
                 const lineClass = isTargetLine ? 'code-line code-line-highlight' : 'code-line';
-                
+
                 result += `<span class="${lineClass}">`;
                 result += `<span class="line-number">${lineNumber}</span>`;
                 result += escapeHtml(line);
                 result += '</span>\n';
             });
-            
+
+            return result;
+        }
+
+        function renderDiff(diffText) {
+            const lines = diffText.split('\n');
+            let result = '';
+
+            lines.forEach(line => {
+                let lineClass = 'code-line';
+
+                if (line.startsWith('+') && !line.startsWith('+++')) {
+                    lineClass = 'code-line diff-added';
+                } else if (line.startsWith('-') && !line.startsWith('---')) {
+                    lineClass = 'code-line diff-removed';
+                } else if (line.startsWith('@@')) {
+                    lineClass = 'code-line';
+                    line = '<span style="color: #58a6ff;">' + escapeHtml(line) + '</span>';
+                    result += `<span class="${lineClass}">${line}</span>\n`;
+                    return;
+                }
+
+                result += `<span class="${lineClass}">${escapeHtml(line)}</span>\n`;
+            });
+
             return result;
         }
 

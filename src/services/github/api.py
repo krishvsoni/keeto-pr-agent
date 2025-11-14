@@ -246,6 +246,27 @@ class GitHubService:
         except Exception as e:
             print(f"Error fetching file content: {e}")
             return None
+    
+    def get_pr_file_patches(self, owner: str, repo: str, pr_number: int) -> Dict[str, str]:
+        """
+        Get patches (diffs) for all files in a PR.
+        
+        Returns:
+            Dict mapping file paths to their patch content
+        """
+        try:
+            repo_obj = self.github.get_repo(f"{owner}/{repo}")
+            pr = repo_obj.get_pull(pr_number)
+            
+            patches = {}
+            for file in pr.get_files():
+                if file.patch:
+                    patches[file.filename] = file.patch
+            
+            return patches
+        except Exception as e:
+            print(f"Error fetching file patches: {e}")
+            return {}
 
     
     def verify_webhook_signature(self, payload: bytes, signature: str) -> bool:
