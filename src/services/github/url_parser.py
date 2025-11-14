@@ -136,6 +136,20 @@ def parse_pr_url(url: str) -> Dict[str, Any]:
     }
 
 
+def parse_github_pr_url(url: str) -> Optional[Dict[str, Any]]:
+    """Parse GitHub PR URL and return dict."""
+    try:
+        parsed = GitHubUrlParser.parse(url)
+        return {
+            "owner": parsed.owner,
+            "repo": parsed.repo,
+            "pr_number": parsed.pr_number,
+            "url": parsed.url
+        }
+    except ValueError:
+        return None
+
+
 def extract_pr_from_text(text: str) -> Optional[Dict[str, Any]]:
     """Extract PR info from text (legacy interface)"""
     parsed = GitHubUrlParser.extract_from_text(text)

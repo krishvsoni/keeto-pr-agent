@@ -3,463 +3,329 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI PR Review Agent - LangChain Powered</title>
+    <title>PR Review AI</title>
+    <link rel="icon" href="https://github.githubassets.com/favicons/favicon-dark.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        .github-theme {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --border-color: #30363d;
+            --accent-color: #58a6ff;
+            --success-color: #2ea043;
+            --danger-color: #f85149;
+            --warning-color: #d29922;
+            --info-color: #39739d;
         }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            color: #333;
+        .code-block {
+            background-color: #2d3748;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            margin: 1rem 0;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-
-        .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
-        .main-card {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-
-        .form-section {
-            margin-bottom: 30px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #444;
-        }
-
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 15px;
-            transition: all 0.3s;
-            font-family: inherit;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .form-group small {
-            display: block;
-            margin-top: 6px;
-            color: #64748b;
-            font-size: 13px;
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .checkbox-group input[type="checkbox"] {
-            width: auto;
-            cursor: pointer;
-        }
-
-        .checkbox-group label {
-            margin-bottom: 0;
-            cursor: pointer;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 14px 32px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
-        }
-
-        .btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .progress-section {
-            display: none;
-            margin-top: 30px;
-        }
-
-        .progress-section.active {
-            display: block;
-        }
-
-        .progress-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .progress-header h3 {
-            color: #1e293b;
-            font-size: 1.3rem;
-        }
-
-        .progress-badge {
-            background: #667eea;
-            color: white;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        .progress-timeline {
-            position: relative;
-            padding-left: 40px;
-        }
-
-        .progress-item {
-            position: relative;
-            margin-bottom: 25px;
-            opacity: 0;
-            animation: fadeInUp 0.5s forwards;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .progress-item::before {
-            content: '';
-            position: absolute;
-            left: -40px;
-            top: 5px;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #e2e8f0;
-            border: 3px solid white;
-            box-shadow: 0 0 0 2px #e2e8f0;
-        }
-
-        .progress-item.active::before {
-            background: #667eea;
-            box-shadow: 0 0 0 2px #667eea, 0 0 10px rgba(102, 126, 234, 0.5);
-            animation: pulse 2s infinite;
-        }
-
-        .progress-item.completed::before {
-            background: #10b981;
-            box-shadow: 0 0 0 2px #10b981;
-        }
-
-        .progress-item.error::before {
-            background: #ef4444;
-            box-shadow: 0 0 0 2px #ef4444;
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.1);
-            }
-        }
-
-        .progress-content {
-            background: #f8fafc;
-            padding: 15px 20px;
-            border-radius: 8px;
-        }
-
-        .progress-title {
-            font-weight: 600;
-            color: #1e293b;
-            margin-bottom: 6px;
-            font-size: 15px;
-        }
-
-        .progress-message {
-            color: #64748b;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .results-section {
-            display: none;
-            margin-top: 30px;
-        }
-
-        .results-section.active {
-            display: block;
-        }
-
-        .results-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 25px;
-            border-radius: 12px 12px 0 0;
-        }
-
-        .results-header h2 {
-            margin-bottom: 10px;
-        }
-
-        .results-body {
-            background: #f8fafc;
-            padding: 25px;
-            border-radius: 0 0 12px 12px;
-            border: 2px solid #e2e8f0;
-            border-top: none;
-        }
-
-        .summary-box {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border: 2px solid #e2e8f0;
-        }
-
-        .summary-box pre {
-            font-family: 'Segoe UI', sans-serif;
-            color: #475569;
-            line-height: 1.8;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            margin: 0;
-        }
-
-        .reset-btn {
-            background: #64748b;
-            margin-top: 20px;
-        }
-
-        .loading-spinner {
+        .line-number {
+            color: #6b7280;
+            user-select: none;
+            padding-right: 1rem;
             display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid #e2e8f0;
-            border-top-color: #667eea;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            width: 3rem;
+            text-align: right;
         }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        .code-line {
+            display: block;
+            padding: 0.125rem 0;
         }
-
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 1.8rem;
-            }
-
-            .main-card {
-                padding: 20px;
-            }
+        .code-line-highlight {
+            background-color: rgba(251, 191, 36, 0.1);
+            border-left: 3px solid #fbbf24;
+            padding-left: 0.5rem;
+        }
+        .diff-removed {
+            background-color: rgba(248, 81, 73, 0.15);
+            border-left: 3px solid #f85149;
+            padding-left: 0.5rem;
+        }
+        .diff-added {
+            background-color: rgba(46, 160, 67, 0.15);
+            border-left: 3px solid #2ea043;
+            padding-left: 0.5rem;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🤖 AI PR Review Agent</h1>
-            <p>LangChain-powered multi-agent code review with critical thinking • Just paste your PR URL!</p>
+<body class="github-theme bg-[var(--bg-color)] text-[var(--text-primary)] min-h-screen p-5">
+    <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-bold mb-2">Keeto AI</h1>
+            <p class="text-[var(--text-secondary)] text-lg">AI-powered code review with specialized agents</p>
         </div>
-
-        <div class="main-card">
-            <div class="form-section" id="formSection">
-                <div class="form-group">
-                    <label for="prUrl">🔗 GitHub PR URL</label>
-                    <input type="text" id="prUrl" placeholder="https://github.com/owner/repo/pull/123" required>
-                    <small>Paste the full GitHub PR URL here (e.g., https://github.com/facebook/react/pull/123)</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="customInstructions">📝 Custom Review Instructions (Optional)</label>
-                    <textarea id="customInstructions" placeholder="E.g., 'Focus on security vulnerabilities and performance issues. Pay special attention to database queries and API calls.'" rows="4"></textarea>
-                    <small>Guide the AI agents to focus on specific aspects or concerns in your review</small>
-                </div>
-
-                <div class="checkbox-group">
-                    <input type="checkbox" id="postComments">
-                    <label for="postComments">Post review comments to GitHub (requires permissions)</label>
-                </div>
-
-                <button class="btn" onclick="startReview()" id="reviewBtn">
-                    🚀 Start Deep AI Review
-                </button>
+        <div class="bg-[var(--card-bg)] rounded-lg p-8 border border-[var(--border-color)] mb-6">
+            <div class="mb-5">
+                <label for="prUrl" class="block mb-2 font-medium">GitHub Pull Request URL</label>
+                <input
+                    type="text"
+                    id="prUrl"
+                    placeholder="https://github.com/owner/repo/pull/123"
+                    class="w-full px-4 py-2 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)]"
+                >
             </div>
-
-            <div class="progress-section" id="progressSection">
-                <div class="progress-header">
-                    <h3>🔍 Review in Progress</h3>
-                    <div class="progress-badge">
-                        <span class="loading-spinner"></span> Analyzing...
-                    </div>
-                </div>
-                <div class="progress-timeline" id="progressTimeline"></div>
+            <div class="mb-5">
+                <label class="block mb-2 font-medium">Select Agents (leave all unselected to run all)</label>
+                <div class="flex flex-wrap gap-2" id="agentChips"></div>
             </div>
-
-            <div class="results-section" id="resultsSection">
-                <div class="results-header">
-                    <h2>📊 Review Results</h2>
-                </div>
-                <div class="results-body">
-                    <div class="summary-box" id="summaryBox"></div>
-                    <button class="btn reset-btn" onclick="resetForm()">Review Another PR</button>
-                </div>
-            </div>
+            <button
+                class="w-full bg-[var(--accent-color)] hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-md transition-colors duration-200"
+                id="reviewBtn"
+                onclick="startReview()"
+            >
+                Start Review
+            </button>
         </div>
+        <div class="hidden text-center p-5" id="loading">
+            <div class="w-12 h-12 border-4 border-[var(--text-secondary)] border-t-[var(--accent-color)] rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="mb-2">Analyzing pull request with AI agents...</p>
+            <p class="text-sm text-[var(--text-secondary)]">This may take 30-60 seconds</p>
+        </div>
+        <div class="hidden" id="results"></div>
     </div>
-
     <script>
-        function startReview() {
-            const prUrl = document.getElementById('prUrl').value.trim();
-            const customInstructions = document.getElementById('customInstructions').value.trim();
-            const postComments = document.getElementById('postComments').checked;
+        let availableAgents = [];
+        let selectedAgents = new Set();
 
+        async function loadAgents() {
+            try {
+                const response = await fetch('/api/agents');
+                const data = await response.json();
+                availableAgents = data.agents;
+                const chipsContainer = document.getElementById('agentChips');
+                data.agents.forEach(agent => {
+                    const chip = document.createElement('div');
+                    chip.className = 'px-4 py-2 border border-[var(--border-color)] rounded-full cursor-pointer hover:bg-gray-800 transition-colors';
+                    chip.textContent = agent;
+                    chip.title = data.descriptions[agent];
+                    chip.onclick = () => toggleAgent(agent, chip);
+                    chipsContainer.appendChild(chip);
+                });
+            } catch (error) {
+                console.error('Failed to load agents:', error);
+            }
+        }
+
+        function toggleAgent(agent, chipElement) {
+            if (selectedAgents.has(agent)) {
+                selectedAgents.delete(agent);
+                chipElement.classList.remove('bg-[var(--accent-color)]', 'text-white');
+            } else {
+                selectedAgents.add(agent);
+                chipElement.classList.add('bg-[var(--accent-color)]', 'text-white');
+            }
+        }
+
+        async function startReview() {
+            const prUrl = document.getElementById('prUrl').value.trim();
             if (!prUrl) {
                 alert('Please enter a GitHub PR URL');
                 return;
             }
-
-            // Reset UI
-            document.getElementById('formSection').style.display = 'none';
-            document.getElementById('progressSection').classList.add('active');
-            document.getElementById('resultsSection').classList.remove('active');
-            document.getElementById('progressTimeline').innerHTML = '';
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
             document.getElementById('reviewBtn').disabled = true;
 
-            // Start streaming review
-            const eventSource = new EventSource(`/api/stream-review?pr_url=${encodeURIComponent(prUrl)}&custom_instructions=${encodeURIComponent(customInstructions)}&post_comments=${postComments}`);
-            
-            // Actually, we need to use POST for this, so let's use fetch with EventSource simulation
-            fetch('/api/chat-review', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    pr_url: prUrl,
-                    custom_instructions: customInstructions,
-                    post_comments: postComments
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
+            try {
+                const requestBody = { pr_url: prUrl };
+                if (selectedAgents.size > 0) {
+                    requestBody.agents = Array.from(selectedAgents);
+                }
+                const response = await fetch('/api/review', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message || data.error || 'Review failed');
+                }
                 displayResults(data);
-            })
-            .catch(error => {
-                addProgressItem('error', 'Error', error.message);
+            } catch (error) {
+                displayError(error.message);
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
                 document.getElementById('reviewBtn').disabled = false;
-            });
-        }
-
-        function addProgressItem(status, title, message) {
-            const timeline = document.getElementById('progressTimeline');
-            const item = document.createElement('div');
-            item.className = `progress-item ${status}`;
-            item.innerHTML = `
-                <div class="progress-content">
-                    <div class="progress-title">${title}</div>
-                    <div class="progress-message">${message}</div>
-                </div>
-            `;
-            timeline.appendChild(item);
-            timeline.scrollTop = timeline.scrollHeight;
+            }
         }
 
         function displayResults(data) {
-            document.getElementById('progressSection').classList.remove('active');
-            document.getElementById('resultsSection').classList.add('active');
-            
-            const summaryBox = document.getElementById('summaryBox');
-            
-            if (data.status === 'error') {
-                summaryBox.innerHTML = `
-                    <h3 style="color: #ef4444;">❌ Error</h3>
-                    <p style="color: #475569; margin-top: 10px;">${data.error}</p>
-                `;
-            } else {
-                summaryBox.innerHTML = `<pre>${data.summary || 'No summary available'}</pre>`;
+            const resultsDiv = document.getElementById('results');
+            let html = '';
+
+            if (data.error) {
+                html += `<div class="bg-red-900 text-red-100 p-4 rounded-md mb-6">${data.error}: ${data.message}</div>`;
+                resultsDiv.innerHTML = html;
+                resultsDiv.classList.remove('hidden');
+                return;
             }
-            
-            document.getElementById('reviewBtn').disabled = false;
+
+            html += `
+                <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg p-6 mb-6">
+                    <h2 class="text-2xl font-bold mb-4">Review Summary</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                        <div class="text-center">
+                            <div class="text-3xl font-bold">${data.overall_score}</div>
+                            <div class="text-sm text-[var(--text-secondary)]">Overall Score</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold">${data.summary.total_issues}</div>
+                            <div class="text-sm text-[var(--text-secondary)]">Total Issues</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold">${data.summary.by_severity.critical}</div>
+                            <div class="text-sm text-[var(--text-secondary)]">Critical</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold">${data.summary.by_severity.high}</div>
+                            <div class="text-sm text-[var(--text-secondary)]">High</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold">${data.summary.by_severity.medium}</div>
+                            <div class="text-sm text-[var(--text-secondary)]">Medium</div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-md text-lg font-medium">
+                        ${data.recommendation}
+                    </div>
+                </div>
+            `;
+
+            if (data.issues && data.issues.length > 0) {
+                html += '<div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg p-6 mb-6">';
+                html += '<h2 class="text-2xl font-bold mb-6 border-b border-[var(--border-color)] pb-2">Issues Found</h2>';
+
+                const severityColors = {
+                    critical: 'bg-red-900 text-red-100',
+                    high: 'bg-orange-900 text-orange-100',
+                    medium: 'bg-yellow-900 text-yellow-100',
+                    low: 'bg-blue-900 text-blue-100',
+                    info: 'bg-gray-600 text-gray-100'
+                };
+
+                data.issues.forEach(issue => {
+                    const severityClass = severityColors[issue.severity] || 'bg-gray-600 text-gray-100';
+                    html += `
+                        <div class="border-l-4 border-[var(--accent-color)] pl-4 mb-6 bg-gray-800 p-4 rounded-md">
+                            <div class="flex items-center mb-2">
+                                <div class="font-bold text-lg flex-1">${issue.title}</div>
+                                <span class="${severityClass} px-3 py-1 rounded-full text-xs font-medium">${issue.severity.toUpperCase()}</span>
+                                <span class="bg-[var(--accent-color)] text-white px-3 py-1 rounded-full text-xs font-medium ml-2">${issue.agent}</span>
+                            </div>
+                            <div class="text-[var(--text-secondary)] text-sm mb-2">
+                                <span class="font-mono">${issue.file || 'N/A'}</span>
+                                ${issue.line ? `<span class="text-[var(--accent-color)]">:${issue.line}</span>` : ''}
+                            </div>
+                            <div class="mb-3">${issue.description}</div>
+                            
+                            ${issue.code_context ? `
+                                <div class="mb-4">
+                                    <div class="text-sm font-semibold text-[var(--text-secondary)] mb-2">📄 Current Code:</div>
+                                    <div class="bg-[#0d1117] rounded-md p-4 border border-[var(--border-color)] overflow-x-auto">
+                                        <pre class="text-sm"><code>${renderCodeWithLineNumbers(
+                                            issue.code_context.full_context,
+                                            issue.code_context.start_line,
+                                            issue.code_context.target_line_number
+                                        )}</code></pre>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            ${issue.suggestion || issue.suggested_code ? `
+                                <div class="bg-gray-900 rounded-md border-l-4 border-[var(--success-color)] overflow-hidden">
+                                    ${issue.suggestion ? `
+                                        <div class="p-3 border-b border-[var(--border-color)]">
+                                            <div class="text-[var(--success-color)] font-medium mb-1">💡 Suggested Fix:</div>
+                                            <div class="text-sm">${issue.suggestion}</div>
+                                        </div>
+                                    ` : ''}
+                                    ${issue.suggested_code ? `
+                                        <div class="p-3">
+                                            <div class="text-[var(--success-color)] font-medium mb-2">✅ Corrected Code:</div>
+                                            <div class="bg-[#0d1117] rounded-md p-4 border border-[var(--success-color)]">
+                                                <pre class="text-sm"><code class="diff-added">${escapeHtml(issue.suggested_code)}</code></pre>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            ` : ''}
+                            
+                            ${issue.code_snippet ? `
+                                <div class="code-block">
+                                    <pre>${escapeHtml(issue.code_snippet)}</pre>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+            } else {
+                html += `
+                    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg p-6 mb-6">
+                        <div class="text-center text-[var(--success-color)] text-xl p-10">
+                            No issues found! Great work!
+                        </div>
+                    </div>
+                `;
+            }
+
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.remove('hidden');
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
         }
 
-        function resetForm() {
-            document.getElementById('formSection').style.display = 'block';
-            document.getElementById('progressSection').classList.remove('active');
-            document.getElementById('resultsSection').classList.remove('active');
-            document.getElementById('prUrl').value = '';
-            document.getElementById('customInstructions').value = '';
-            document.getElementById('postComments').checked = false;
-            document.getElementById('reviewBtn').disabled = false;
+        function displayError(message) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg p-6 mb-6">
+                    <div class="bg-red-900 text-red-100 p-4 rounded-md">
+                        Error: ${message}
+                    </div>
+                </div>
+            `;
+            resultsDiv.classList.remove('hidden');
         }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        
+        function renderCodeWithLineNumbers(code, startLine, targetLine) {
+            const lines = code.split('\n');
+            let result = '';
+            
+            lines.forEach((line, index) => {
+                const lineNumber = startLine + index;
+                const isTargetLine = lineNumber === targetLine;
+                const lineClass = isTargetLine ? 'code-line code-line-highlight' : 'code-line';
+                
+                result += `<span class="${lineClass}">`;
+                result += `<span class="line-number">${lineNumber}</span>`;
+                result += escapeHtml(line);
+                result += '</span>\n';
+            });
+            
+            return result;
+        }
+
+        loadAgents();
     </script>
 </body>
 </html>

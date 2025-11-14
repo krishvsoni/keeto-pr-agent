@@ -105,6 +105,8 @@ HOST=0.0.0.0
 ```bash
 # From project root
 python -m src.main
+or 
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Server will start at: `http://localhost:8000`
