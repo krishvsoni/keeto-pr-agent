@@ -81,13 +81,17 @@ class PRReviewService:
             # Run orchestrator to review the PR
             review_result = self.orchestrator.review_pr(diff, pr_info, selected_agents)
             
-            # Enrich issues with actual code context
+            
             if review_result.get("issues"):
+                # Fetch all file patches once
+                file_patches = self.github_api.get_pr_file_patches(owner, repo, pr_number)
+                
                 self._enrich_issues_with_code_context(
                     review_result["issues"], 
                     owner, 
                     repo, 
-                    head_sha
+                    head_sha,
+                    file_patches
                 )
             
             return review_result
@@ -147,17 +151,22 @@ class PRReviewService:
         issues: List[Dict[str, Any]], 
         owner: str, 
         repo: str, 
-        ref: str
+        ref: str,
+        file_patches: Dict[str, str] = None
     ) -> None:
         """
-        Enrich issues with actual code context from the files.
+        Enrich issues with actual code context from the files and relevant diffs.
         
         Args:
             issues: List of issues to enrich
             owner: Repository owner
             repo: Repository name
             ref: Git reference (commit SHA)
+            file_patches: Dict mapping file paths to their patch content
         """
+        if file_patches is None:
+            file_patches = {}
+            
         for issue in issues:
             file_path = issue.get("file")
             line_number = issue.get("line")
@@ -187,8 +196,67 @@ class PRReviewService:
                         "end_line": context["context_end_line"],
                         "target_line_number": line_number
                     }
+                
+                # Add the relevant patch/diff for this file if available
+                if file_path in file_patches:
+                    patch = file_patches[file_path]
+                    # Extract relevant portion of patch around the line
+                    relevant_patch = self._extract_relevant_patch_section(patch, line_number)
+                    if relevant_patch:
+                        issue["diff_patch"] = relevant_patch
                     
             except Exception as e:
                 print(f"Failed to enrich issue with code context: {e}")
                 # Continue without code context if fetching fails
                 continue
+    
+    def _extract_relevant_patch_section(self, patch: str, target_line: int, context: int = 5) -> Optional[str]:
+        """
+        Extract the relevant section of a patch around a target line.
+        
+        Args:
+            patch: Full git patch/diff content
+            target_line: Target line number
+            context: Lines of context to include
+            
+        Returns:
+            Relevant portion of the patch or None
+        """
+        try:
+            lines = patch.split('\n')
+            relevant_lines = []
+            current_line = 0
+            in_relevant_section = False
+            
+            for line in lines:
+                # Track line numbers from diff headers
+                if line.startswith('@@'):
+                    # Parse the line number from @@ -x,y +a,b @@
+                    import re
+                    match = re.search(r'@@\s*-\d+,?\d*\s*\+(\d+),?\d*\s*@@', line)
+                    if match:
+                        current_line = int(match.group(1))
+                        relevant_lines.append(line)
+                        continue
+                
+                # Check if we're near the target line
+                if current_line > 0:
+                    distance = abs(current_line - target_line)
+                    if distance <= context:
+                        in_relevant_section = True
+                        relevant_lines.append(line)
+                    elif in_relevant_section:
+                        # We've passed the relevant section
+                        break
+                    
+                    # Update current line for additions and context
+                    if not line.startswith('-'):
+                        current_line += 1
+            
+            if relevant_lines:
+                return '\n'.join(relevant_lines)
+            return None
+            
+        except Exception as e:
+            print(f"Error extracting patch section: {e}")
+            return None
