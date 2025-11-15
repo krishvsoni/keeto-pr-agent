@@ -33,4 +33,3 @@ GITHUB_TOKEN=your_token
 OPENROUTER_API_KEY=your_key
 ```
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/krishvsoni/keeto-pr-agent)
